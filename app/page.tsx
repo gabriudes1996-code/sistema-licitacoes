@@ -3,21 +3,17 @@
 import { useState } from "react";
 import {
   BarChart3,
-  Calculator,
   ChevronRight,
   FileText,
   Gavel,
   LayoutDashboard,
   Menu,
-  Package,
   Settings,
-  Truck,
   X,
 } from "lucide-react";
 
 import Dashboard from "./components/Dashboard";
 import Licitacoes from "./components/Licitacoes";
-import Frete from "./components/Frete";
 import Relatorios from "./components/Relatorios";
 
 const menu = [
@@ -30,20 +26,8 @@ const menu = [
     icon: FileText,
   },
   {
-    label: "Produtos",
-    icon: Package,
-  },
-  {
-    label: "Calculadora de preço",
-    icon: Calculator,
-  },
-  {
     label: "Simulador de lance",
     icon: Gavel,
-  },
-  {
-    label: "Frete",
-    icon: Truck,
   },
   {
     label: "Relatórios",
@@ -63,25 +47,6 @@ export default function Home() {
       case "Licitações":
         return <Licitacoes />;
 
-      case "Frete":
-        return <Frete />;
-
-      case "Produtos":
-        return (
-          <PlaceholderPage
-            title="Produtos"
-            description="O cadastro e gerenciamento de produtos será implementado na próxima etapa."
-          />
-        );
-
-      case "Calculadora de preço":
-        return (
-          <PlaceholderPage
-            title="Calculadora de preço"
-            description="A calculadora de preço será conectada aos produtos e custos do sistema."
-          />
-        );
-
       case "Simulador de lance":
         return (
           <PlaceholderPage
@@ -90,8 +55,8 @@ export default function Home() {
           />
         );
 
-    case "Relatórios":
-  return <Relatorios />;
+      case "Relatórios":
+        return <Relatorios />;
 
       default:
         return <Dashboard />;
@@ -100,14 +65,8 @@ export default function Home() {
 
   return (
     <div className="app">
-
-      {/* SIDEBAR */}
-
-      <aside
-        className={`sidebar ${open ? "open" : ""}`}
-      >
+      <aside className={`sidebar ${open ? "open" : ""}`}>
         <div className="brand">
-
           <div className="brandMark">
             <Gavel size={22} />
           </div>
@@ -124,42 +83,30 @@ export default function Home() {
           >
             <X size={20} />
           </button>
-
         </div>
 
         <nav>
-
           {menu.map(({ label, icon: Icon }) => (
             <button
               key={label}
               type="button"
-              className={
-                active === label
-                  ? "navItem active"
-                  : "navItem"
-              }
+              className={active === label ? "navItem active" : "navItem"}
               onClick={() => {
                 setActive(label);
                 setOpen(false);
               }}
             >
               <Icon size={19} />
-
               <span>{label}</span>
 
               {label === "Dashboard" && (
-                <ChevronRight
-                  size={16}
-                  className="navArrow"
-                />
+                <ChevronRight size={16} className="navArrow" />
               )}
             </button>
           ))}
-
         </nav>
 
         <div className="sidebarBottom">
-
           <button
             className="navItem"
             type="button"
@@ -176,16 +123,11 @@ export default function Home() {
             <span className="dot" />
             Dados locais
           </div>
-
         </div>
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL */}
-
       <main className="main">
-
         <header>
-
           <button
             className="mobileMenu"
             onClick={() => setOpen(true)}
@@ -195,30 +137,20 @@ export default function Home() {
           </button>
 
           <div>
-            <p className="eyebrow">
-              SISTEMA DE LICITAÇÕES
-            </p>
-
+            <p className="eyebrow">SISTEMA DE LICITAÇÕES</p>
             <h1>{active}</h1>
           </div>
 
           <div className="headerRight">
-
             <span className="status">
               <span className="dot" />
               Operação local
             </span>
-
           </div>
-
         </header>
 
-        {/* PÁGINA ATUAL */}
-
         {renderPage()}
-
       </main>
-
     </div>
   );
 }
@@ -232,19 +164,12 @@ function PlaceholderPage({
 }) {
   return (
     <section className="placeholderPage">
-
       <div className="panel">
-
         <div className="panelTitle">
-
           <div>
             <h2>{title}</h2>
-
-            <p>
-              {description}
-            </p>
+            <p>{description}</p>
           </div>
-
         </div>
 
         <div
@@ -254,14 +179,9 @@ function PlaceholderPage({
             color: "#6b7280",
           }}
         >
-          <p>
-            Esta área será desenvolvida
-            nas próximas etapas.
-          </p>
+          <p>Esta área será desenvolvida nas próximas etapas.</p>
         </div>
-
       </div>
-
     </section>
   );
 }
