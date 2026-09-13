@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CircleDollarSign, Clock3, Coins, FileText, Target, TrendingUp, XCircle } from "lucide-react";
+import { CheckCircle2, CircleDollarSign, Clock3, Coins, FileText, Target, TrendingUp, WalletCards, XCircle } from "lucide-react";
 
 type Licitacao = { id: number; orgao: string; edital: string; data: string; status: string };
 type Item = { id?: number; quantidade: number; custo: number; frete: number; lanceAtual: number; resultado?: "em_disputa" | "ganhou" | "perdeu" };
@@ -80,8 +80,10 @@ export default function Dashboard() {
       lista.forEach((i) => {
         const qtd = n(i.quantidade);
         const custoItem = qtd * n(i.custo) + n(i.frete);
+
         if (i.resultado !== "perdeu") custo += custoItem;
         if (i.resultado === "ganhou") ganhos++;
+
         if (n(i.lanceAtual) > 0 && i.resultado !== "perdeu") {
           const lance = qtd * n(i.lanceAtual);
           lances += lance;
@@ -91,12 +93,30 @@ export default function Dashboard() {
     });
 
     const margem = custo > 0 ? (lucro / custo) * 100 : 0;
-    const aReceber = Math.max(0, solicitado - recebido);
-    return { andamento, concluidas, perdidas, totalItens, custo, lances, lucro, margem, ganhos, aReceber };
-  }, [licitacoes, itens, recebido, solicitado]);
+
+    // Regra do ERP:
+    // - solicitado: somente o que a prefeitura efetivamente pediu;
+    // - recebido: pagamentos já registrados;
+    // - valor total a receber: valor integral dos lances válidos/ganhos;
+    // - custo: custo total da empresa nos itens válidos.
+    const valorTotalAReceber = lances;
+
+    return {
+      andamento,
+      concluidas,
+      perdidas,
+      totalItens,
+      custo,
+      lances,
+      lucro,
+      margem,
+      ganhos,
+      valorTotalAReceber,
+    };
+  }, [licitacoes, itens]);
 
   const pct = (v: number) => licitacoes.length ? Math.round(v / licitacoes.length * 100) : 0;
-  const maxFinanceiro = Math.max(resumo.custo, resumo.lances, resumo.lucro, recebido, 1);
+  const maxFinanceiro = Math.max(resumo.custo, resumo.lances, resumo.lucro, recebido, solicitado, 1);
   const barra = (v: number) => `${Math.max(4, Math.min(100, (Math.abs(v) / maxFinanceiro) * 100))}%`;
 
   return (
@@ -134,18 +154,36 @@ export default function Dashboard() {
         <div className="neoChartCard">
           <div className="neoCardTitle"><span>FINANCEIRO</span><small>Comparativo atual</small></div>
           <div className="neoBars">
-            <Bar label="Custo total" value={resumo.custo} width={barra(resumo.custo)} classe="purple" />
-            <Bar label="Valor dos lances" value={resumo.lances} width={barra(resumo.lances)} classe="cyan" />
+            <Bar label="Valor de custo" value={resumo.custo} width={barra(resumo.custo)} classe="purple" />
+            <Bar label="Valor total dos lances" value={resumo.lances} width={barra(resumo.lances)} classe="cyan" />
             <Bar label="Lucro potencial" value={resumo.lucro} width={barra(resumo.lucro)} classe="pink" />
-            <Bar label="Recebido" value={recebido} width={barra(recebido)} classe="lime" />
+            <Bar label="Valor solicitado" value={solicitado} width={barra(solicitado)} classe="orange" />
+            <Bar label="Valor recebido" value={recebido} width={barra(recebido)} classe="lime" />
           </div>
         </div>
 
         <div className="neoRecebimentosCard">
-          <div className="neoCardTitle"><span>EXECUÇÃO DOS CONTRATOS</span><small>Valores realizados</small></div>
-          <div className="neoMoneyRow"><div className="neoMoneyIcon cyan"><CircleDollarSign size={20}/></div><div><span>Valor solicitado</span><strong>{brl(solicitado)}</strong></div></div>
-          <div className="neoMoneyRow"><div className="neoMoneyIcon lime"><Coins size={20}/></div><div><span>Valor recebido</span><strong>{brl(recebido)}</strong></div></div>
-          <div className="neoMoneyRow"><div className="neoMoneyIcon pink"><TrendingUp size={20}/></div><div><span>A receber</span><strong>{brl(resumo.aReceber)}</strong></div></div>
+          <div className="neoCardTitle"><span>EXECUÇÃO DOS CONTRATOS</span><small>Visão financeira dos contratos</small></div>
+
+          <div className="neoMoneyRow">
+            <div className="neoMoneyIcon cyan"><CircleDollarSign size={20}/></div>
+            <div><span>Valor solicitado</span><strong>{brl(solicitado)}</strong><small>O que as prefeituras já pediram</small></div>
+          </div>
+
+          <div className="neoMoneyRow">
+            <div className="neoMoneyIcon lime"><Coins size={20}/></div>
+            <div><span>Valor recebido</span><strong>{brl(recebido)}</strong><small>Pagamentos já registrados</small></div>
+          </div>
+
+          <div className="neoMoneyRow">
+            <div className="neoMoneyIcon pink"><TrendingUp size={20}/></div>
+            <div><span>Valor total a receber</span><strong>{brl(resumo.valorTotalAReceber)}</strong><small>Valor total dos lances válidos</small></div>
+          </div>
+
+          <div className="neoMoneyRow">
+            <div className="neoMoneyIcon purple"><WalletCards size={20}/></div>
+            <div><span>Valor de custo</span><strong>{brl(resumo.custo)}</strong><small>Custo total da empresa nos itens válidos</small></div>
+          </div>
         </div>
       </div>
 
