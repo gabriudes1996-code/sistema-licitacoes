@@ -17,22 +17,9 @@ import Licitacoes from "./components/Licitacoes";
 import Relatorios from "./components/Relatorios";
 
 const menu = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Licitações",
-    icon: FileText,
-  },
-  {
-    label: "Simulador de lance",
-    icon: Gavel,
-  },
-  {
-    label: "Relatórios",
-    icon: BarChart3,
-  },
+  { label: "Dashboard", icon: LayoutDashboard },
+  { label: "Licitações", icon: FileText },
+  { label: "Relatórios", icon: BarChart3 },
 ];
 
 export default function Home() {
@@ -43,21 +30,10 @@ export default function Home() {
     switch (active) {
       case "Dashboard":
         return <Dashboard />;
-
       case "Licitações":
         return <Licitacoes />;
-
-      case "Simulador de lance":
-        return (
-          <PlaceholderPage
-            title="Simulador de lance"
-            description="O simulador de lance será integrado aos dados das licitações."
-          />
-        );
-
       case "Relatórios":
         return <Relatorios />;
-
       default:
         return <Dashboard />;
     }
@@ -70,12 +46,10 @@ export default function Home() {
           <div className="brandMark">
             <Gavel size={22} />
           </div>
-
           <div>
             <strong>LicitaPro</strong>
             <span>Gestão de licitações</span>
           </div>
-
           <button
             className="closeMobile"
             onClick={() => setOpen(false)}
@@ -98,7 +72,6 @@ export default function Home() {
             >
               <Icon size={19} />
               <span>{label}</span>
-
               {label === "Dashboard" && (
                 <ChevronRight size={16} className="navArrow" />
               )}
@@ -152,36 +125,5 @@ export default function Home() {
         {renderPage()}
       </main>
     </div>
-  );
-}
-
-function PlaceholderPage({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <section className="placeholderPage">
-      <div className="panel">
-        <div className="panelTitle">
-          <div>
-            <h2>{title}</h2>
-            <p>{description}</p>
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: "40px 20px",
-            textAlign: "center",
-            color: "#6b7280",
-          }}
-        >
-          <p>Esta área será desenvolvida nas próximas etapas.</p>
-        </div>
-      </div>
-    </section>
   );
 }
