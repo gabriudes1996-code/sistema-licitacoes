@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, ChevronDown, ChevronUp, CircleDollarSign, PackageCheck, Plus, ReceiptText, Trash2 } from "lucide-react";
+import { Building2, CheckCircle2, ChevronDown, ChevronUp, CircleDollarSign, CreditCard, PackageCheck, Plus, ReceiptText, Trash2 } from "lucide-react";
 
 type Licitacao = { id: number; orgao: string; edital: string; data: string };
 type Item = { id: number; numero: number; descricao: string; quantidade: number; custo: number; frete: number; lanceAtual: number; resultado?: "em_disputa" | "ganhou" | "perdeu" };
-type Movimento = { id: number; data: string; quantidadeSolicitada: number; valorRecebido: number; observacao: string };
+type Movimento = { id: number; data: string; quantidadeSolicitada: number; valorSolicitado?: number; valorRecebido?: number; pago?: boolean; dataPagamento?: string; observacao: string };
 type Grupo = { licitacao: Licitacao; itens: Item[] };
 
 const LICITACOES_KEY = "licitapro_licitacoes";
@@ -18,7 +18,7 @@ export default function Recebimentos() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [aberta, setAberta] = useState<number | null>(null);
   const [movimentos, setMovimentos] = useState<Record<string, Movimento[]>>({});
-  const [form, setForm] = useState<Record<string, { data: string; quantidade: string; valor: string; observacao: string }>>({});
+  const [form, setForm] = useState<Record<string, { data: string; quantidade: string; valorSolicitado: string; observacao: string }>>({});
 
   const chaveItem = (licitacaoId: number, itemId: number) => `${licitacaoId}_${itemId}`;
 
@@ -61,10 +61,14 @@ export default function Recebimentos() {
     grupos.forEach((grupo) => grupo.itens.forEach((item) => {
       const chave = chaveItem(grupo.licitacao.id, item.id);
       const lista = movimentos[chave] || [];
-      const qtdSolicitada = lista.reduce((t, m) => t + (Number(m.quantidadeSolicitada) || 0), 0);
-      const recebidoItem = lista.reduce((t, m) => t + (Number(m.valorRecebido) || 0), 0);
       const contratado = (Number(item.quantidade) || 0) * (Number(item.lanceAtual) || 0);
-      const solicitado = qtdSolicitada * (Number(item.lanceAtual) || 0);
+      const solicitado = lista.reduce((t, m) => t + ((Number(m.valorSolicitado) || 0) || ((Number(m.quantidadeSolicitada) || 0) * (Number(item.lanceAtual) || 0))), 0);
+      const recebidoItem = lista.reduce((t, m) => {
+        const valor = (Number(m.valorSolicitado) || 0) || ((Number(m.quantidadeSolicitada) || 0) * (Number(item.lanceAtual) || 0));
+        if (m.pago === true) return t + valor;
+        if (m.pago === undefined) return t + (Number(m.valorRecebido) || 0);
+        return t;
+      }, 0);
       valorContratado += contratado;
       valorSolicitado += solicitado;
       recebido += recebidoItem;
@@ -73,19 +77,25 @@ export default function Recebimentos() {
     return { valorContratado, valorSolicitado, recebido, aReceber };
   }, [grupos, movimentos]);
 
-  const valorForm = (chave: string) => form[chave] || { data: hoje(), quantidade: "", valor: "", observacao: "" };
+  const valorForm = (chave: string) => form[chave] || { data: hoje(), quantidade: "", valorSolicitado: "", observacao: "" };
 
-  const atualizarForm = (chave: string, campo: "data" | "quantidade" | "valor" | "observacao", valor: string) => {
+  const atualizarForm = (chave: string, campo: "data" | "quantidade" | "valorSolicitado" | "observacao", valor: string) => {
     setForm((anterior) => ({ ...anterior, [chave]: { ...valorForm(chave), [campo]: valor } }));
   };
 
-  const adicionarMovimento = (licitacaoId: number, item: Item) => {
+  const adicionarSolicitacao = (licitacaoId: number, item: Item) => {
     const chave = chaveItem(licitacaoId, item.id);
     const atual = valorForm(chave);
     const quantidade = Number(atual.quantidade) || 0;
-    const valorRecebido = Number(atual.valor) || 0;
-    if (quantidade <= 0 && valorRecebido <= 0) {
-      alert("Informe uma quantidade solicitada ou um valor recebido.");
+    const valorCalculado = quantidade * (Number(item.lanceAtual) || 0);
+    const valorSolicitado = atual.valorSolicitado.trim() ? Number(atual.valorSolicitado) || 0 : valorCalculado;
+
+    if (quantidade <= 0) {
+      alert("Informe a quantidade solicitada pela prefeitura.");
+      return;
+    }
+    if (valorSolicitado <= 0) {
+      alert("Informe o valor da solicitação.");
       return;
     }
 
@@ -99,13 +109,30 @@ export default function Recebimentos() {
       id: Date.now(),
       data: atual.data || hoje(),
       quantidadeSolicitada: quantidade,
-      valorRecebido,
+      valorSolicitado,
+      valorRecebido: 0,
+      pago: false,
       observacao: atual.observacao.trim(),
     };
+
     const lista = [...(movimentos[chave] || []), novo];
     localStorage.setItem(EXEC_PREFIX + chave, JSON.stringify(lista));
     setMovimentos((anterior) => ({ ...anterior, [chave]: lista }));
-    setForm((anterior) => ({ ...anterior, [chave]: { data: hoje(), quantidade: "", valor: "", observacao: "" } }));
+    setForm((anterior) => ({ ...anterior, [chave]: { data: hoje(), quantidade: "", valorSolicitado: "", observacao: "" } }));
+  };
+
+  const marcarPago = (licitacaoId: number, itemId: number, movimentoId: number) => {
+    const chave = chaveItem(licitacaoId, itemId);
+    const lista = (movimentos[chave] || []).map((mov) => mov.id === movimentoId ? { ...mov, pago: true, dataPagamento: hoje() } : mov);
+    localStorage.setItem(EXEC_PREFIX + chave, JSON.stringify(lista));
+    setMovimentos((anterior) => ({ ...anterior, [chave]: lista }));
+  };
+
+  const desfazerPagamento = (licitacaoId: number, itemId: number, movimentoId: number) => {
+    const chave = chaveItem(licitacaoId, itemId);
+    const lista = (movimentos[chave] || []).map((mov) => mov.id === movimentoId ? { ...mov, pago: false, dataPagamento: undefined, valorRecebido: 0 } : mov);
+    localStorage.setItem(EXEC_PREFIX + chave, JSON.stringify(lista));
+    setMovimentos((anterior) => ({ ...anterior, [chave]: lista }));
   };
 
   const excluirMovimento = (licitacaoId: number, itemId: number, movimentoId: number) => {
@@ -120,17 +147,17 @@ export default function Recebimentos() {
       <div className="erpHero">
         <div>
           <span className="erpKicker">EXECUÇÃO DOS CONTRATOS</span>
-          <h2>Recebimentos das prefeituras</h2>
-          <p>Controle o que foi ganho, o que a prefeitura realmente solicitou e quanto já foi recebido.</p>
+          <h2>Solicitações e pagamentos</h2>
+          <p>Primeiro registre o pedido da prefeitura. Quando o dinheiro entrar, marque aquela solicitação como paga.</p>
         </div>
         <div className="erpHeroIcon"><CircleDollarSign size={28} /></div>
       </div>
 
       <div className="erpMetricGrid">
         <Metric titulo="Potencial contratado" valor={moeda(resumo.valorContratado)} detalhe="Quantidade ganha × valor do lance" />
-        <Metric titulo="Já solicitado" valor={moeda(resumo.valorSolicitado)} detalhe="Somente unidades efetivamente pedidas" />
-        <Metric titulo="Recebido" valor={moeda(resumo.recebido)} detalhe="Valores lançados como recebidos" positivo />
-        <Metric titulo="A receber" valor={moeda(resumo.aReceber)} detalhe="Solicitado menos recebido" destaque />
+        <Metric titulo="Já solicitado" valor={moeda(resumo.valorSolicitado)} detalhe="Pedidos efetivamente feitos pelas prefeituras" />
+        <Metric titulo="Recebido" valor={moeda(resumo.recebido)} detalhe="Somente solicitações marcadas como pagas" positivo />
+        <Metric titulo="Pendente de pagamento" valor={moeda(resumo.aReceber)} detalhe="Solicitado e ainda não pago" destaque />
       </div>
 
       {grupos.length === 0 ? (
@@ -161,10 +188,16 @@ export default function Recebimentos() {
                   const qtdGanha = Number(item.quantidade) || 0;
                   const qtdSolicitada = lista.reduce((t, m) => t + (Number(m.quantidadeSolicitada) || 0), 0);
                   const saldoQtd = Math.max(0, qtdGanha - qtdSolicitada);
-                  const esperado = qtdSolicitada * (Number(item.lanceAtual) || 0);
-                  const recebido = lista.reduce((t, m) => t + (Number(m.valorRecebido) || 0), 0);
-                  const aReceber = Math.max(0, esperado - recebido);
+                  const solicitado = lista.reduce((t, m) => t + ((Number(m.valorSolicitado) || 0) || ((Number(m.quantidadeSolicitada) || 0) * (Number(item.lanceAtual) || 0))), 0);
+                  const recebido = lista.reduce((t, m) => {
+                    const valor = (Number(m.valorSolicitado) || 0) || ((Number(m.quantidadeSolicitada) || 0) * (Number(item.lanceAtual) || 0));
+                    if (m.pago === true) return t + valor;
+                    if (m.pago === undefined) return t + (Number(m.valorRecebido) || 0);
+                    return t;
+                  }, 0);
+                  const pendente = Math.max(0, solicitado - recebido);
                   const atual = valorForm(chave);
+                  const valorSugerido = (Number(atual.quantidade) || 0) * (Number(item.lanceAtual) || 0);
 
                   return (
                     <div className="erpItemCard" key={item.id}>
@@ -178,30 +211,40 @@ export default function Recebimentos() {
                         <Mini label="Qtd. solicitada" value={String(qtdSolicitada)} />
                         <Mini label="Saldo disponível" value={String(saldoQtd)} />
                         <Mini label="Valor unitário" value={moeda(item.lanceAtual)} />
-                        <Mini label="Faturável" value={moeda(esperado)} />
-                        <Mini label="A receber" value={moeda(aReceber)} strong />
+                        <Mini label="Valor solicitado" value={moeda(solicitado)} />
+                        <Mini label="Pendente" value={moeda(pendente)} strong />
                       </div>
 
-                      <div className="erpEntryForm">
-                        <label><span>Data</span><input type="date" value={atual.data} onChange={(e) => atualizarForm(chave, "data", e.target.value)} /></label>
+                      <div className="erpEntryForm requestOnly">
+                        <label><span>Data do pedido</span><input type="date" value={atual.data} onChange={(e) => atualizarForm(chave, "data", e.target.value)} /></label>
                         <label><span>Qtd. solicitada</span><input type="number" min="0" max={saldoQtd} value={atual.quantidade} onChange={(e) => atualizarForm(chave, "quantidade", e.target.value)} placeholder="0" /></label>
-                        <label><span>Valor recebido</span><input type="number" min="0" step="0.01" value={atual.valor} onChange={(e) => atualizarForm(chave, "valor", e.target.value)} placeholder="0,00" /></label>
-                        <label className="erpEntryNote"><span>Observação</span><input value={atual.observacao} onChange={(e) => atualizarForm(chave, "observacao", e.target.value)} placeholder="Ex.: empenho, NF, pagamento parcial..." /></label>
-                        <button className="erpAddButton" type="button" onClick={() => adicionarMovimento(grupo.licitacao.id, item)}><Plus size={17} /> Registrar</button>
+                        <label><span>Valor da solicitação</span><input type="number" min="0" step="0.01" value={atual.valorSolicitado} onChange={(e) => atualizarForm(chave, "valorSolicitado", e.target.value)} placeholder={valorSugerido ? String(valorSugerido.toFixed(2)) : "0,00"} /></label>
+                        <label className="erpEntryNote"><span>Observação</span><input value={atual.observacao} onChange={(e) => atualizarForm(chave, "observacao", e.target.value)} placeholder="Ex.: empenho, ordem de fornecimento..." /></label>
+                        <button className="erpAddButton" type="button" onClick={() => adicionarSolicitacao(grupo.licitacao.id, item)}><Plus size={17} /> Registrar solicitação</button>
                       </div>
 
                       {lista.length > 0 && (
                         <div className="erpMovements">
-                          <div className="erpMovementsHeader"><ReceiptText size={16} /><strong>Histórico de execução</strong></div>
-                          {lista.map((mov) => (
-                            <div className="erpMovementRow" key={mov.id}>
-                              <span>{new Date(mov.data + "T12:00:00").toLocaleDateString("pt-BR")}</span>
-                              <span>{mov.quantidadeSolicitada > 0 ? `${mov.quantidadeSolicitada} un. solicitada(s)` : "Pagamento"}</span>
-                              <strong>{mov.valorRecebido > 0 ? moeda(mov.valorRecebido) : "—"}</strong>
-                              <small>{mov.observacao || "Sem observação"}</small>
-                              <button type="button" onClick={() => excluirMovimento(grupo.licitacao.id, item.id, mov.id)} title="Excluir lançamento"><Trash2 size={15} /></button>
-                            </div>
-                          ))}
+                          <div className="erpMovementsHeader"><ReceiptText size={16} /><strong>Solicitações registradas</strong></div>
+                          {lista.map((mov) => {
+                            const valor = (Number(mov.valorSolicitado) || 0) || ((Number(mov.quantidadeSolicitada) || 0) * (Number(item.lanceAtual) || 0));
+                            const pago = mov.pago === true || (mov.pago === undefined && (Number(mov.valorRecebido) || 0) >= valor && valor > 0);
+                            return (
+                              <div className="erpMovementRow paymentRow" key={mov.id}>
+                                <span>{new Date(mov.data + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                                <span>{mov.quantidadeSolicitada} un. solicitada(s)</span>
+                                <strong>{moeda(valor)}</strong>
+                                <small>{mov.observacao || "Sem observação"}</small>
+                                <span className={pago ? "erpPaidBadge" : "erpPendingBadge"}>{pago ? "Pago" : "Pendente"}</span>
+                                {pago ? (
+                                  <button className="erpUndoPayment" type="button" onClick={() => desfazerPagamento(grupo.licitacao.id, item.id, mov.id)} title="Desfazer pagamento">Desfazer</button>
+                                ) : (
+                                  <button className="erpPayButton" type="button" onClick={() => marcarPago(grupo.licitacao.id, item.id, mov.id)}><CreditCard size={14} /> Marcar pago</button>
+                                )}
+                                <button className="erpDeleteMovement" type="button" onClick={() => excluirMovimento(grupo.licitacao.id, item.id, mov.id)} title="Excluir lançamento"><Trash2 size={15} /></button>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
