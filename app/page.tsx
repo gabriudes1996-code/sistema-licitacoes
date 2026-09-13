@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { BarChart3, ChevronRight, FileText, Gavel, LayoutDashboard, Menu, Settings, X, CircleDollarSign } from "lucide-react";
+import { ChevronRight, FileText, Gavel, LayoutDashboard, Menu, Settings, X, CircleDollarSign } from "lucide-react";
 import Dashboard from "./components/Dashboard";
 import Licitacoes from "./components/Licitacoes";
-import Relatorios from "./components/Relatorios";
 import Recebimentos from "./components/Recebimentos";
 
 const menu = [
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "Licitações", icon: FileText },
   { label: "Recebimentos", icon: CircleDollarSign },
-  { label: "Relatórios", icon: BarChart3 },
 ];
 
 export default function Home() {
@@ -23,7 +21,6 @@ export default function Home() {
       case "Dashboard": return <Dashboard />;
       case "Licitações": return <Licitacoes />;
       case "Recebimentos": return <Recebimentos />;
-      case "Relatórios": return <Relatorios />;
       default: return <Dashboard />;
     }
   };
