@@ -17,25 +17,24 @@ export default function BiddingMinimumValueEnhancer() {
       const tabela = document.querySelector(".simpleItemsTable");
       if (!tabela) return;
 
-      const cabecalhoMinimo = tabela.querySelector("thead th:nth-child(8)");
+      const cabecalhoMinimo = tabela.querySelector("thead th:nth-child(10)");
       if (cabecalhoMinimo && cabecalhoMinimo.textContent !== "VALOR MÍNIMO") cabecalhoMinimo.textContent = "VALOR MÍNIMO";
 
-      const cabecalhoMargem = tabela.querySelector("thead th:nth-child(10)");
+      const cabecalhoMargem = tabela.querySelector("thead th:nth-child(12)");
       if (cabecalhoMargem && cabecalhoMargem.textContent !== "MARGEM DE LUCRO") cabecalhoMargem.textContent = "MARGEM DE LUCRO";
 
-      const linhas = tabela.querySelectorAll("tbody tr");
-      linhas.forEach((linha) => {
+      tabela.querySelectorAll("tbody tr").forEach((linha) => {
         const colunas = linha.querySelectorAll("td");
-        if (colunas.length < 10) return;
+        if (colunas.length < 14) return;
 
         const quantidade = Number((colunas[2].textContent || "").replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
-        const custo = parseBRL(colunas[4].textContent || "");
-        const frete = parseBRL(colunas[5].textContent || "");
-        const lanceInput = colunas[6].querySelector<HTMLInputElement>("input");
+        const custo = parseBRL(colunas[5].textContent || "");
+        const frete = parseBRL(colunas[7].textContent || "");
+        const lanceInput = colunas[8].querySelector<HTMLInputElement>("input");
         const lance = Number(lanceInput?.value || 0) || 0;
 
         let margemDesejada = 20;
-        const meta = colunas[9].textContent?.match(/meta:\s*([0-9.,]+)/i);
+        const meta = colunas[11].textContent?.match(/meta:\s*([0-9.,]+)/i);
         if (meta) {
           const valorMeta = Number(meta[1].replace(",", "."));
           if (Number.isFinite(valorMeta)) margemDesejada = valorMeta;
@@ -43,7 +42,7 @@ export default function BiddingMinimumValueEnhancer() {
 
         const custoRealUnitario = custo + (quantidade > 0 ? frete / quantidade : 0);
         const valorMinimo = custoRealUnitario * (1 + margemDesejada / 100);
-        const alvoMinimo = colunas[7];
+        const alvoMinimo = colunas[9];
 
         let valor = alvoMinimo.querySelector<HTMLElement>(".minimumBidValue");
         if (!valor) {
@@ -58,7 +57,7 @@ export default function BiddingMinimumValueEnhancer() {
           ? ((lance - custoRealUnitario) / custoRealUnitario) * 100
           : 0;
 
-        const margemStrong = colunas[9].querySelector<HTMLElement>("strong");
+        const margemStrong = colunas[11].querySelector<HTMLElement>("strong");
         if (margemStrong) {
           margemStrong.textContent = lance > 0 && custoRealUnitario > 0 ? pct(margemLucro) : "—";
           margemStrong.className = margemLucro >= margemDesejada
