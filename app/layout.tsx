@@ -3,8 +3,10 @@ import "./globals.css";
 import "./erp.css";
 import "./bidding.css";
 import "./bidding-description.css";
+import "./bidding-minimum.css";
 import "./agenda.css";
 import BiddingDescriptionToggle from "./components/BiddingDescriptionToggle";
+import BiddingMinimumValueEnhancer from "./components/BiddingMinimumValueEnhancer";
 
 export const metadata: Metadata = {
   title: "LicitaPro ERP — Contratos Públicos",
@@ -16,6 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR">
       <body>
         <BiddingDescriptionToggle />
+        <BiddingMinimumValueEnhancer />
         {children}
       </body>
     </html>
