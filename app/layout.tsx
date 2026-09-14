@@ -3,6 +3,7 @@ import "./globals.css";
 import "./erp.css";
 import "./bidding.css";
 import "./bidding-description.css";
+import "./agenda.css";
 import BiddingDescriptionToggle from "./components/BiddingDescriptionToggle";
 
 export const metadata: Metadata = {
