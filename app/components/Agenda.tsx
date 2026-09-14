@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin, Plus, Save, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, FileText, Globe2, MapPin, Plus, Save, Trash2, X } from "lucide-react";
 
 type Compromisso = {
   id: number;
@@ -12,10 +12,35 @@ type Compromisso = {
   observacao: string;
 };
 
+type LicitacaoAgenda = {
+  id: number;
+  orgao: string;
+  edital: string;
+  modalidade: string;
+  data: string;
+  horario?: string;
+  portal?: string;
+  status?: string;
+};
+
+type EventoAgenda = {
+  id: string;
+  data: string;
+  horario: string;
+  titulo: string;
+  local: string;
+  observacao: string;
+  tipo: "manual" | "licitacao";
+  edital?: string;
+  modalidade?: string;
+  portal?: string;
+  compromissoId?: number;
+};
+
 const STORAGE_KEY = "licitapro_agenda";
+const LICITACOES_KEY = "licitapro_licitacoes";
 const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
 const iso = (ano: number, mes: number, dia: number) => `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
 export default function Agenda() {
@@ -23,19 +48,29 @@ export default function Agenda() {
   const [mesAtual, setMesAtual] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const [dataSelecionada, setDataSelecionada] = useState(iso(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()));
   const [compromissos, setCompromissos] = useState<Compromisso[]>([]);
+  const [licitacoes, setLicitacoes] = useState<LicitacaoAgenda[]>([]);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [horario, setHorario] = useState("");
   const [local, setLocal] = useState("");
   const [observacao, setObservacao] = useState("");
 
-  useEffect(() => {
+  const carregarDados = () => {
     try {
       const salvos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
       setCompromissos(Array.isArray(salvos) ? salvos : []);
-    } catch {
-      setCompromissos([]);
-    }
+    } catch { setCompromissos([]); }
+    try {
+      const lista = JSON.parse(localStorage.getItem(LICITACOES_KEY) || "[]");
+      setLicitacoes(Array.isArray(lista) ? lista : []);
+    } catch { setLicitacoes([]); }
+  };
+
+  useEffect(() => {
+    carregarDados();
+    window.addEventListener("storage", carregarDados);
+    const timer = setInterval(carregarDados, 1000);
+    return () => { window.removeEventListener("storage", carregarDados); clearInterval(timer); };
   }, []);
 
   const salvarLista = (lista: Compromisso[]) => {
@@ -44,18 +79,8 @@ export default function Agenda() {
   };
 
   const adicionar = () => {
-    if (!titulo.trim()) {
-      alert("Informe o compromisso.");
-      return;
-    }
-    const novo: Compromisso = {
-      id: Date.now(),
-      data: dataSelecionada,
-      horario,
-      titulo: titulo.trim(),
-      local: local.trim(),
-      observacao: observacao.trim(),
-    };
+    if (!titulo.trim()) { alert("Informe o compromisso."); return; }
+    const novo: Compromisso = { id: Date.now(), data: dataSelecionada, horario, titulo: titulo.trim(), local: local.trim(), observacao: observacao.trim() };
     salvarLista([...compromissos, novo]);
     setTitulo(""); setHorario(""); setLocal(""); setObservacao(""); setMostrarForm(false);
   };
@@ -63,6 +88,36 @@ export default function Agenda() {
   const excluir = (id: number) => {
     if (confirm("Excluir este compromisso da agenda?")) salvarLista(compromissos.filter(c => c.id !== id));
   };
+
+  const eventos = useMemo<EventoAgenda[]>(() => {
+    const manuais: EventoAgenda[] = compromissos.map(c => ({
+      id: `manual-${c.id}`,
+      data: c.data,
+      horario: c.horario || "",
+      titulo: c.titulo,
+      local: c.local,
+      observacao: c.observacao,
+      tipo: "manual",
+      compromissoId: c.id,
+    }));
+
+    const eventosLicitacao: EventoAgenda[] = licitacoes
+      .filter(l => Boolean(l.data))
+      .map(l => ({
+        id: `licitacao-${l.id}`,
+        data: l.data,
+        horario: l.horario || "",
+        titulo: l.orgao,
+        local: l.portal || "Portal não informado",
+        observacao: l.status ? `Status: ${l.status}` : "",
+        tipo: "licitacao",
+        edital: l.edital,
+        modalidade: l.modalidade,
+        portal: l.portal || "",
+      }));
+
+    return [...eventosLicitacao, ...manuais];
+  }, [compromissos, licitacoes]);
 
   const ano = mesAtual.getFullYear();
   const mes = mesAtual.getMonth();
@@ -76,7 +131,7 @@ export default function Agenda() {
     return lista;
   }, [primeiroDia, totalDias]);
 
-  const compromissosDia = compromissos
+  const eventosDia = eventos
     .filter(c => c.data === dataSelecionada)
     .sort((a, b) => (a.horario || "99:99").localeCompare(b.horario || "99:99"));
 
@@ -93,7 +148,7 @@ export default function Agenda() {
         <div>
           <span className="erpKicker">ORGANIZAÇÃO</span>
           <h2>Agenda</h2>
-          <p>Acompanhe compromissos, visitas, entregas e outros eventos importantes.</p>
+          <p>As licitações com data cadastrada aparecem automaticamente no calendário.</p>
         </div>
         <button className="agendaAddBtn" onClick={() => setMostrarForm(true)}><Plus size={18}/>Novo compromisso</button>
       </div>
@@ -105,21 +160,15 @@ export default function Agenda() {
             <strong>{meses[mes]} {ano}</strong>
             <button onClick={() => navegarMes(1)} title="Próximo mês"><ChevronRight size={19}/></button>
           </div>
-
           <div className="agendaWeekdays">{diasSemana.map(d => <span key={d}>{d}</span>)}</div>
           <div className="agendaDays">
             {dias.map((dia, index) => {
               if (!dia) return <div className="agendaBlank" key={`b-${index}`} />;
               const data = iso(ano, mes, dia);
-              const qtd = compromissos.filter(c => c.data === data).length;
+              const qtd = eventos.filter(c => c.data === data).length;
               const selecionado = data === dataSelecionada;
               const hojeIso = iso(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-              return (
-                <button key={data} className={`${selecionado ? "selected" : ""} ${data === hojeIso ? "today" : ""}`} onClick={() => setDataSelecionada(data)}>
-                  <span>{dia}</span>
-                  {qtd > 0 && <small>{qtd}</small>}
-                </button>
-              );
+              return <button key={data} className={`${selecionado ? "selected" : ""} ${data === hojeIso ? "today" : ""}`} onClick={() => setDataSelecionada(data)}><span>{dia}</span>{qtd > 0 && <small>{qtd}</small>}</button>;
             })}
           </div>
         </div>
@@ -130,19 +179,22 @@ export default function Agenda() {
             <button onClick={() => setMostrarForm(true)}><Plus size={16}/>Adicionar</button>
           </div>
 
-          {compromissosDia.length === 0 ? (
+          {eventosDia.length === 0 ? (
             <div className="agendaEmpty"><CalendarDays size={34}/><h3>Nenhum compromisso</h3><p>Este dia está livre.</p></div>
           ) : (
             <div className="agendaEvents">
-              {compromissosDia.map(c => (
-                <div className="agendaEvent" key={c.id}>
+              {eventosDia.map(c => (
+                <div className={`agendaEvent ${c.tipo === "licitacao" ? "agendaBidEvent" : ""}`} key={c.id}>
                   <div className="agendaEventTime"><Clock3 size={16}/><strong>{c.horario || "Sem horário"}</strong></div>
                   <div className="agendaEventMain">
+                    <div className="agendaEventType">{c.tipo === "licitacao" ? <><FileText size={13}/> Licitação</> : <>Compromisso</>}</div>
                     <h3>{c.titulo}</h3>
+                    {c.tipo === "licitacao" && <p><strong>{c.edital}</strong>{c.modalidade ? ` • ${c.modalidade}` : ""}</p>}
                     {c.local && <p><MapPin size={14}/>{c.local}</p>}
+                    {c.tipo === "licitacao" && c.portal && <p><Globe2 size={14}/>{c.portal}</p>}
                     {c.observacao && <small>{c.observacao}</small>}
                   </div>
-                  <button className="agendaDelete" onClick={() => excluir(c.id)} title="Excluir"><Trash2 size={16}/></button>
+                  {c.tipo === "manual" && c.compromissoId && <button className="agendaDelete" onClick={() => excluir(c.compromissoId!)} title="Excluir"><Trash2 size={16}/></button>}
                 </div>
               ))}
             </div>
