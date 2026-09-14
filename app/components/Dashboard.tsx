@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CircleDollarSign, Coins, FileText, Target, TrendingUp, WalletCards, Hourglass, BadgePercent } from "lucide-react";
+import { BadgePercent, CircleDollarSign, Coins, FileText, Hourglass, Target, TrendingUp, WalletCards } from "lucide-react";
 
 type Licitacao = { id: number; orgao: string; edital: string; data: string; status: string };
 type Item = { id?: number; quantidade: number; custo: number; frete: number; lanceAtual: number; resultado?: "em_disputa" | "ganhou" | "perdeu" };
@@ -65,12 +65,11 @@ export default function Dashboard() {
   }, []);
 
   const resumo = useMemo(() => {
-    let andamento = 0, concluidas = 0, perdidas = 0, totalItens = 0;
-    let custoGanhos = 0, valorGanhos = 0, ganhos = 0;
+    let andamento = 0, concluidas = 0, perdidas = 0;
+    let custoGanhos = 0, valorGanhos = 0;
 
     licitacoes.forEach((l) => {
       const lista = itens[l.id] || [];
-      totalItens += lista.length;
       const resultados = lista.map(i => i.resultado || "em_disputa");
       const todosFinalizados = lista.length > 0 && resultados.every(r => r === "ganhou" || r === "perdeu");
       const todosPerdidos = lista.length > 0 && resultados.every(r => r === "perdeu");
@@ -81,7 +80,6 @@ export default function Dashboard() {
 
       lista.forEach((i) => {
         if (i.resultado !== "ganhou") return;
-        ganhos++;
         const qtd = n(i.quantidade);
         custoGanhos += qtd * n(i.custo) + n(i.frete);
         valorGanhos += qtd * n(i.lanceAtual);
@@ -93,10 +91,9 @@ export default function Dashboard() {
     const taxaSucesso = (concluidas + perdidas) > 0 ? (concluidas / (concluidas + perdidas)) * 100 : 0;
     const saldoContrato = Math.max(0, valorGanhos - solicitado);
     const pendentePagamento = Math.max(0, solicitado - recebido);
-    const percentualExecutado = valorGanhos > 0 ? (solicitado / valorGanhos) * 100 : 0;
     const percentualRecebido = solicitado > 0 ? (recebido / solicitado) * 100 : 0;
 
-    return { andamento, concluidas, perdidas, totalItens, custoGanhos, valorGanhos, lucroPotencial, margem, ganhos, taxaSucesso, saldoContrato, pendentePagamento, percentualExecutado, percentualRecebido };
+    return { andamento, concluidas, perdidas, custoGanhos, valorGanhos, lucroPotencial, margem, taxaSucesso, saldoContrato, pendentePagamento, percentualRecebido };
   }, [licitacoes, itens, recebido, solicitado]);
 
   return (
@@ -105,39 +102,41 @@ export default function Dashboard() {
         <div>
           <span>VISÃO EXECUTIVA</span>
           <h2>Dashboard</h2>
-          <p>Indicadores diferentes para acompanhar resultado, execução e caixa.</p>
+          <p>Resumo claro das licitações, resultado financeiro e recebimentos.</p>
         </div>
         <button onClick={carregar} type="button">Atualizar dados</button>
       </div>
 
-      <div className="neoTopGrid compact">
+      <div className="neoTopGrid clean">
         <RingCard titulo="Licitações" valor={String(licitacoes.length)} detalhe={`${resumo.andamento} em andamento`} percentual={100} classe="cyan" icon={<FileText size={17} />} />
-        <RingCard titulo="Taxa de sucesso" valor={`${resumo.taxaSucesso.toFixed(0)}%`} detalhe={`${resumo.concluidas} concluídas de ${resumo.concluidas + resumo.perdidas} finalizadas`} percentual={resumo.taxaSucesso} classe="pink" icon={<BadgePercent size={17} />} />
-        <RingCard titulo="Itens ganhos" valor={String(resumo.ganhos)} detalhe={`${resumo.totalItens} itens cadastrados`} percentual={resumo.totalItens ? Math.round(resumo.ganhos / resumo.totalItens * 100) : 0} classe="lime" icon={<Target size={17} />} />
-
+        <RingCard titulo="Taxa de sucesso" valor={`${resumo.taxaSucesso.toFixed(0)}%`} detalhe={`${resumo.concluidas} concluídas • ${resumo.perdidas} perdidas`} percentual={resumo.taxaSucesso} classe="pink" icon={<BadgePercent size={17} />} />
         <div className="neoMetricLarge">
           <span>MARGEM SOBRE O CUSTO</span>
           <strong>{resumo.margem.toFixed(1)}%</strong>
-          <p>Diferença entre o valor ganho e o custo dos itens vencedores.</p>
+          <p>Percentual de lucro sobre o custo total dos itens ganhos.</p>
           <div className="neoProgress"><i style={{ width: `${Math.max(0, Math.min(100, resumo.margem))}%` }} /></div>
         </div>
       </div>
 
-      <div className="neoExecutionOnly">
-        <div className="neoRecebimentosCard">
-          <div className="neoCardTitle"><span>EXECUÇÃO DOS CONTRATOS</span><small>O que já virou pedido e pagamento</small></div>
-          <Money icon={<CircleDollarSign size={20}/>} classe="cyan" label="Valor solicitado" value={brl(solicitado)} detail={`${resumo.percentualExecutado.toFixed(0)}% do valor ganho`} />
-          <Money icon={<Coins size={20}/>} classe="lime" label="Valor recebido" value={brl(recebido)} detail={`${resumo.percentualRecebido.toFixed(0)}% do solicitado`} />
-          <Money icon={<Hourglass size={20}/>} classe="pink" label="Pendente de pagamento" value={brl(resumo.pendentePagamento)} detail="Solicitado e ainda não pago" />
-          <Money icon={<WalletCards size={20}/>} classe="orange" label="Saldo do contrato" value={brl(resumo.saldoContrato)} detail="Valor ganho ainda não solicitado" />
+      <div className="neoDashboardSections">
+        <div className="neoSectionBlock">
+          <div className="neoSectionHeader"><span>EXECUÇÃO DOS CONTRATOS</span><small>Pedidos e pagamentos das prefeituras</small></div>
+          <div className="neoExecutionStack">
+            <Money icon={<CircleDollarSign size={20}/>} classe="cyan" label="Valor solicitado" value={brl(solicitado)} detail="Total que as prefeituras já pediram" />
+            <Money icon={<Coins size={20}/>} classe="lime" label="Valor recebido" value={brl(recebido)} detail={`${resumo.percentualRecebido.toFixed(0)}% do valor solicitado`} />
+            <Money icon={<Hourglass size={20}/>} classe="pink" label="Pendente de pagamento" value={brl(resumo.pendentePagamento)} detail="Solicitado e ainda não pago" />
+            <Money icon={<WalletCards size={20}/>} classe="orange" label="Saldo do contrato" value={brl(resumo.saldoContrato)} detail="Valor ganho que ainda não foi solicitado" />
+          </div>
         </div>
-      </div>
 
-      <div className="neoBottomGrid">
-        <InfoCard icon={<Target size={18}/>} titulo="Valor ganho" valor={brl(resumo.valorGanhos)} detalhe="Somente itens vencedores" classe="cyan" />
-        <InfoCard icon={<WalletCards size={18}/>} titulo="Custo dos ganhos" valor={brl(resumo.custoGanhos)} detalhe="Custo + frete dos itens ganhos" classe="orange" />
-        <InfoCard icon={<TrendingUp size={18}/>} titulo="Lucro potencial" valor={brl(resumo.lucroPotencial)} detalhe="Valor ganho menos custo" classe="lime" />
-        <InfoCard icon={<BadgePercent size={18}/>} titulo="Execução do contrato" valor={`${resumo.percentualExecutado.toFixed(1)}%`} detalhe="Percentual já solicitado pelas prefeituras" classe="pink" />
+        <div className="neoSectionBlock">
+          <div className="neoSectionHeader"><span>RESULTADO FINANCEIRO</span><small>Somente itens ganhos</small></div>
+          <div className="neoFinancialStack">
+            <InfoCard icon={<Target size={18}/>} titulo="Valor ganho" valor={brl(resumo.valorGanhos)} detalhe="Valor total vendido nos itens vencedores" classe="cyan" />
+            <InfoCard icon={<WalletCards size={18}/>} titulo="Custo dos ganhos" valor={brl(resumo.custoGanhos)} detalhe="Custo + frete dos itens ganhos" classe="orange" />
+            <InfoCard icon={<TrendingUp size={18}/>} titulo="Lucro potencial" valor={brl(resumo.lucroPotencial)} detalhe="Valor ganho menos custo dos ganhos" classe="lime" />
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -148,9 +147,9 @@ function RingCard({ titulo, valor, detalhe, percentual, classe, icon }: { titulo
 }
 
 function Money({ icon, classe, label, value, detail }: { icon: React.ReactNode; classe: string; label: string; value: string; detail: string }) {
-  return <div className="neoMoneyRow"><div className={`neoMoneyIcon ${classe}`}>{icon}</div><div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div></div>;
+  return <div className="neoMoneyRow vertical"><div className={`neoMoneyIcon ${classe}`}>{icon}</div><div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div></div>;
 }
 
 function InfoCard({ icon, titulo, valor, detalhe, classe }: { icon: React.ReactNode; titulo: string; valor: string; detalhe: string; classe: string }) {
-  return <div className="neoMiniStatus neoInfoCard"><div className={`neoMoneyIcon ${classe}`}>{icon}</div><div><span>{titulo}</span><strong>{valor}</strong><small>{detalhe}</small></div></div>;
+  return <div className="neoMiniStatus neoInfoCard vertical"><div className={`neoMoneyIcon ${classe}`}>{icon}</div><div><span>{titulo}</span><strong>{valor}</strong><small>{detalhe}</small></div></div>;
 }
