@@ -1,0 +1,42 @@
+/* Descrição compacta dos itens na tela de disputa */
+.simpleItemsTable tbody tr td:nth-child(2){
+  position:relative!important;
+  display:block!important;
+  max-height:58px!important;
+  overflow:hidden!important;
+  padding-right:8px!important;
+  padding-bottom:20px!important;
+  line-height:1.35!important;
+  word-break:break-word!important;
+  overflow-wrap:anywhere!important;
+  cursor:pointer!important;
+}
+
+.simpleItemsTable tbody tr td:nth-child(2)::after{
+  content:"Expandir descrição";
+  position:absolute;
+  left:0;
+  bottom:0;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.25px;
+  color:#2563eb;
+  background:#fff;
+  padding-top:3px;
+}
+
+.simpleItemsTable tbody tr td:nth-child(2).descriptionExpanded{
+  max-height:none!important;
+  overflow:visible!important;
+  padding-bottom:22px!important;
+}
+
+.simpleItemsTable tbody tr td:nth-child(2).descriptionExpanded::after{
+  content:"Recolher descrição";
+}
+
+@media(max-width:820px){
+  .simpleItemsTable tbody tr td:nth-child(2){
+    max-height:52px!important;
+  }
+}
