@@ -1,7 +1,7 @@
 /* Valor mínimo calculado para disputa */
-.simpleItemsTable td:nth-child(8)>:not(.minimumBidValue){display:none!important}
-.simpleItemsTable td:nth-child(8):before{content:"Valor mínimo"!important}
-.minimumBidValue{display:block!important;color:#0f9f6e!important;font-size:12px!important;font-weight:800!important;white-space:nowrap!important;background:#ecfdf5!important;border:1px solid #a7f3d0!important;border-radius:7px!important;padding:7px 8px!important;text-align:center!important}
+.simpleItemsTable td:nth-child(10)>:not(.minimumBidValue){display:none!important}
+.simpleItemsTable td:nth-child(10):before{content:"Valor mínimo"!important}
+.minimumBidValue{display:block!important;color:#0f9f6e!important;font-size:11px!important;font-weight:800!important;white-space:nowrap!important;background:#ecfdf5!important;border:1px solid #a7f3d0!important;border-radius:7px!important;padding:7px 8px!important;text-align:center!important}
 
 /* Destaque de data e horário na listagem de licitações */
 .licitacaoDateHighlight,.licitacaoTimeHighlight{display:inline-flex!important;align-items:center!important;gap:5px!important;font-weight:800!important;border-radius:999px!important;padding:5px 9px!important}
