@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./erp.css";
 import "./bidding.css";
+import "./bidding-description.css";
+import BiddingDescriptionToggle from "./components/BiddingDescriptionToggle";
 
 export const metadata: Metadata = {
   title: "LicitaPro ERP — Contratos Públicos",
@@ -11,7 +13,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <BiddingDescriptionToggle />
+        {children}
+      </body>
     </html>
   );
 }
