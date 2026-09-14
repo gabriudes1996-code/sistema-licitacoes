@@ -6,6 +6,7 @@ import "./bidding-description.css";
 import "./bidding-minimum.css";
 import "./agenda.css";
 import BiddingDescriptionToggle from "./components/BiddingDescriptionToggle";
+import BiddingItemTotalsEnhancer from "./components/BiddingItemTotalsEnhancer";
 import BiddingMinimumValueEnhancer from "./components/BiddingMinimumValueEnhancer";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR">
       <body>
         <BiddingDescriptionToggle />
+        <BiddingItemTotalsEnhancer />
         <BiddingMinimumValueEnhancer />
         {children}
       </body>
