@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./erp.css";
+import "./dashboard-adjustments.css";
 import "./bidding.css";
 import "./bidding-description.css";
 import "./bidding-minimum.css";
