@@ -1,0 +1,7 @@
+.neoTopGrid.neoTopGridSix{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.neoRing.lime{--ring:#a5ff49}
+.neoPaymentFlow.neoPaymentFlowLeft{max-width:760px;margin:16px 0 0}
+.neoPaymentFlowLeft .neoFlowConnector{justify-items:start;padding-left:42px}
+@media(max-width:1450px){.neoTopGrid.neoTopGridSix{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.neoTopGrid.neoTopGridSix{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.neoTopGrid.neoTopGridSix{grid-template-columns:1fr}.neoPaymentFlow.neoPaymentFlowLeft{max-width:none}}
