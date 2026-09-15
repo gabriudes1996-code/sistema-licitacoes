@@ -90,20 +90,19 @@ export default function Dashboard() {
       <RingCard titulo="Licitações concluídas" valor={String(resumo.concluidas + resumo.perdidas)} detalhe={`${resumo.concluidas} com ganho • ${resumo.perdidas} perdidas`} percentual={licitacoes.length ? ((resumo.concluidas+resumo.perdidas)/licitacoes.length)*100 : 0} classe="lime" icon={<BadgeCheck size={17}/>} />
       <RingCard titulo="Taxa de sucesso" valor={`${resumo.taxaSucesso.toFixed(0)}%`} detalhe={`${resumo.concluidas} com ganho • ${resumo.perdidas} perdidas`} percentual={resumo.taxaSucesso} classe="pink" icon={<BadgePercent size={17}/>} />
       <TopMoney icon={<Target size={19}/>} classe="cyan" label="Valor ganho" value={brl(resumo.valorGanhos)} detail="Total dos itens vencidos nas licitações" />
-      <TopMoney icon={<TrendingUp size={19}/>} classe="lime" label="Lucro potencial" value={brl(resumo.lucroPotencial)} detail="Valor ganho menos custo dos ganhos" />
+      <TopMoney icon={<Coins size={19}/>} classe="lime" label="Valor recebido" value={brl(recebido)} detail={`${resumo.percentualRecebido.toFixed(0)}% do solicitado já foi pago`} />
       <div className="neoMetricLarge compact"><span>MARGEM SOBRE O CUSTO</span><strong>{resumo.margem.toFixed(1)}%</strong><p>Lucro potencial em relação ao custo dos itens ganhos.</p><div className="neoProgress"><i style={{width:`${Math.max(0,Math.min(100,resumo.margem))}%`}}/></div></div>
     </div>
 
     <div className="neoGroupedDashboard neoContractVisual">
       <div className="neoSectionHeader"><span>EXECUÇÃO DOS CONTRATOS</span><small>Do pedido da prefeitura até o recebimento</small></div>
-      <div className="neoPaymentFlow neoPaymentFlowLeft">
+      <div className="neoContractGrid">
         <Money icon={<CircleDollarSign size={21}/>} classe="cyan" label="Valor solicitado" value={brl(solicitado)} detail="Total já solicitado pelas prefeituras" />
-        <div className="neoFlowConnector"><span>↓</span></div>
+        <InfoCard icon={<WalletCards size={18}/>} titulo="Custo dos ganhos" valor={brl(resumo.custoGanhos)} detalhe="Custo + frete dos itens vencedores" classe="orange"/>
         <Money icon={<Hourglass size={21}/>} classe="pink" label="Pendente de pagamento" value={brl(resumo.pendentePagamento)} detail="Valor solicitado que ainda não foi pago" />
-        <div className="neoFlowConnector"><span>↓</span></div>
-        <Money icon={<Coins size={21}/>} classe="lime" label="Valor recebido" value={brl(recebido)} detail={`${resumo.percentualRecebido.toFixed(0)}% do solicitado já foi pago`} />
+        <InfoCard icon={<WalletCards size={18}/>} titulo="Saldo do contrato" valor={brl(resumo.saldoContrato)} detalhe="Valor ganho ainda não solicitado" classe="cyan"/>
+        <Money icon={<TrendingUp size={21}/>} classe="lime" label="Lucro potencial" value={brl(resumo.lucroPotencial)} detail="Valor ganho menos custo dos ganhos" />
       </div>
-      <div className="neoBottomFinancials"><InfoCard icon={<WalletCards size={18}/>} titulo="Custo dos ganhos" valor={brl(resumo.custoGanhos)} detalhe="Custo + frete dos itens vencedores" classe="orange"/><InfoCard icon={<WalletCards size={18}/>} titulo="Saldo do contrato" valor={brl(resumo.saldoContrato)} detalhe="Valor ganho ainda não solicitado" classe="cyan"/></div>
     </div>
   </section>;
 }
