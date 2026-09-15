@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BadgePercent, CircleDollarSign, Coins, FileText, Hourglass, Target, TrendingUp, WalletCards } from "lucide-react";
 
 type Licitacao = { id: number; orgao: string; edital: string; data: string; status: string };
@@ -95,40 +95,42 @@ export default function Dashboard() {
         <button onClick={carregar} type="button">Atualizar dados</button>
       </div>
 
-      <div className="neoTopGrid clean">
+      <div className="neoTopGrid neoTopGridFive">
         <RingCard titulo="Licitações" valor={String(licitacoes.length)} detalhe={`${resumo.andamento} em andamento`} percentual={100} classe="cyan" icon={<FileText size={17} />} />
         <RingCard titulo="Taxa de sucesso" valor={`${resumo.taxaSucesso.toFixed(0)}%`} detalhe={`${resumo.concluidas} concluídas • ${resumo.perdidas} perdidas`} percentual={resumo.taxaSucesso} classe="pink" icon={<BadgePercent size={17} />} />
-        <div className="neoMetricLarge"><span>MARGEM SOBRE O CUSTO</span><strong>{resumo.margem.toFixed(1)}%</strong><p>Lucro potencial em relação ao custo total dos itens ganhos.</p><div className="neoProgress"><i style={{ width: `${Math.max(0, Math.min(100, resumo.margem))}%` }} /></div></div>
+        <TopMoney icon={<Target size={19}/>} classe="cyan" label="Valor ganho" value={brl(resumo.valorGanhos)} detail="Total dos itens vencidos nas licitações" />
+        <TopMoney icon={<TrendingUp size={19}/>} classe="lime" label="Lucro potencial" value={brl(resumo.lucroPotencial)} detail="Valor ganho menos custo dos ganhos" />
+        <div className="neoMetricLarge compact"><span>MARGEM SOBRE O CUSTO</span><strong>{resumo.margem.toFixed(1)}%</strong><p>Lucro potencial em relação ao custo dos itens ganhos.</p><div className="neoProgress"><i style={{ width: `${Math.max(0, Math.min(100, resumo.margem))}%` }} /></div></div>
       </div>
 
-      <div className="neoGroupedDashboard">
-        <div className="neoSectionHeader"><span>EXECUÇÃO DOS CONTRATOS</span><small>Pedidos e pagamentos das prefeituras</small></div>
-        <div className="neoExecutionRow three">
-          <Money icon={<CircleDollarSign size={20}/>} classe="cyan" label="Valor solicitado" value={brl(solicitado)} detail="Total já solicitado pelas prefeituras" />
-          <Money icon={<Hourglass size={20}/>} classe="pink" label="Pendente de pagamento" value={brl(resumo.pendentePagamento)} detail="Solicitado e ainda não pago" />
-          <Money icon={<Coins size={20}/>} classe="lime" label="Valor recebido" value={brl(recebido)} detail={`${resumo.percentualRecebido.toFixed(0)}% do solicitado já foi pago`} />
+      <div className="neoGroupedDashboard neoContractVisual">
+        <div className="neoSectionHeader"><span>EXECUÇÃO DOS CONTRATOS</span><small>Do pedido da prefeitura até o recebimento</small></div>
+        <div className="neoPaymentFlow">
+          <Money icon={<CircleDollarSign size={21}/>} classe="cyan" label="Valor solicitado" value={brl(solicitado)} detail="Total já solicitado pelas prefeituras" />
+          <div className="neoFlowConnector"><span>↓</span></div>
+          <Money icon={<Hourglass size={21}/>} classe="pink" label="Pendente de pagamento" value={brl(resumo.pendentePagamento)} detail="Valor solicitado que ainda não foi pago" />
+          <div className="neoFlowConnector"><span>↓</span></div>
+          <Money icon={<Coins size={21}/>} classe="lime" label="Valor recebido" value={brl(recebido)} detail={`${resumo.percentualRecebido.toFixed(0)}% do solicitado já foi pago`} />
         </div>
 
-        <div className="neoExecutionRow two">
-          <InfoCard icon={<Target size={18}/>} titulo="Valor ganho" valor={brl(resumo.valorGanhos)} detalhe="Valor total dos itens vencedores" classe="cyan" />
-          <InfoCard icon={<WalletCards size={18}/>} titulo="Saldo do contrato" valor={brl(resumo.saldoContrato)} detalhe="Valor ganho ainda não solicitado" classe="orange" />
-        </div>
-
-        <div className="neoExecutionRow two">
+        <div className="neoBottomFinancials">
           <InfoCard icon={<WalletCards size={18}/>} titulo="Custo dos ganhos" valor={brl(resumo.custoGanhos)} detalhe="Custo + frete dos itens vencedores" classe="orange" />
-          <InfoCard icon={<TrendingUp size={18}/>} titulo="Lucro potencial" valor={brl(resumo.lucroPotencial)} detalhe="Valor ganho menos custo dos ganhos" classe="lime" />
+          <InfoCard icon={<WalletCards size={18}/>} titulo="Saldo do contrato" valor={brl(resumo.saldoContrato)} detalhe="Valor ganho ainda não solicitado" classe="cyan" />
         </div>
       </div>
     </section>
   );
 }
 
-function RingCard({ titulo, valor, detalhe, percentual, classe, icon }: { titulo: string; valor: string; detalhe: string; percentual: number; classe: string; icon: React.ReactNode }) {
+function RingCard({ titulo, valor, detalhe, percentual, classe, icon }: { titulo: string; valor: string; detalhe: string; percentual: number; classe: string; icon: ReactNode }) {
   return <div className="neoRingCard"><div className={`neoRing ${classe}`} style={{ ["--pct" as string]: `${Math.max(0, Math.min(100, percentual)) * 3.6}deg` }}><div>{valor}</div></div><div className="neoRingText"><span>{icon}{titulo}</span><small>{detalhe}</small></div></div>;
 }
-function Money({ icon, classe, label, value, detail }: { icon: React.ReactNode; classe: string; label: string; value: string; detail: string }) {
-  return <div className="neoMoneyRow grouped"><div className={`neoMoneyIcon ${classe}`}>{icon}</div><div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div></div>;
+function TopMoney({ icon, classe, label, value, detail }: { icon: ReactNode; classe: string; label: string; value: string; detail: string }) {
+  return <div className={`neoTopMoney ${classe}`}><div className={`neoMoneyIcon ${classe}`}>{icon}</div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>;
 }
-function InfoCard({ icon, titulo, valor, detalhe, classe }: { icon: React.ReactNode; titulo: string; valor: string; detalhe: string; classe: string }) {
+function Money({ icon, classe, label, value, detail }: { icon: ReactNode; classe: string; label: string; value: string; detail: string }) {
+  return <div className={`neoMoneyRow grouped flow ${classe}`}><div className={`neoMoneyIcon ${classe}`}>{icon}</div><div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div></div>;
+}
+function InfoCard({ icon, titulo, valor, detalhe, classe }: { icon: ReactNode; titulo: string; valor: string; detalhe: string; classe: string }) {
   return <div className="neoMiniStatus neoInfoCard grouped"><div className={`neoMoneyIcon ${classe}`}>{icon}</div><div><span>{titulo}</span><strong>{valor}</strong><small>{detalhe}</small></div></div>;
 }
