@@ -616,6 +616,7 @@ export default function DetalhesLicitacao({
       quantidade: number;
       valorEstimado: number;
       valorTotalEstimado: number;
+      custo?: number;
     }[]
   ) => {
     const novosItens =
@@ -637,7 +638,7 @@ export default function DetalhesLicitacao({
           valorEstimado:
             item.valorEstimado,
 
-          custo: 0,
+          custo: numero(item.custo),
 
           frete: 0,
 
