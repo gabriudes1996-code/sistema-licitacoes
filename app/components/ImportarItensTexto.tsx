@@ -88,7 +88,7 @@ function parseBlocoRotulado(bloco: string): ItemImportado | null {
       .trim();
   }
 
-  if (!quantidade || !valorEstimado || !descricao) return null;
+  if (!quantidade || !descricao) return null;
   if (!valorTotalEstimado) valorTotalEstimado = quantidade * valorEstimado;
 
   return { numero, descricao, quantidade, valorEstimado, valorTotalEstimado, custo };
@@ -98,8 +98,8 @@ function parseLinhaSeparada(linha: string): ItemImportado | null {
   const separador = linha.includes("|") ? "|" : linha.includes("\t") ? "\t" : null;
   if (!separador) return null;
 
-  const partes = linha.split(separador).map((p) => p.trim()).filter(Boolean);
-  if (partes.length < 4) return null;
+  const partes = linha.split(separador).map((p) => p.trim());
+  if (partes.length < 3) return null;
 
   const numero = Number(partes[0].replace(/\D/g, ""));
   if (!numero) return null;
@@ -107,13 +107,13 @@ function parseLinhaSeparada(linha: string): ItemImportado | null {
   // Formato preferencial: item | descrição | quantidade | unitário | total | custo
   const descricao = partes[1];
   const quantidade = moedaParaNumero(partes[2].replace(/\b(?:UN|UND|UNID|UNIDADE|PC|PÇ|PÇS)\b/gi, ""));
-  const valorEstimado = moedaParaNumero(partes[3]);
+  const valorEstimado = partes[3] ? moedaParaNumero(partes[3]) : 0;
   const valorTotalEstimado = partes[4]
     ? moedaParaNumero(partes[4])
     : quantidade * valorEstimado;
 
   const custo = partes[5] ? moedaParaNumero(partes[5]) : 0;
-  if (!descricao || !quantidade || !valorEstimado) return null;
+  if (!descricao || !quantidade) return null;
   return { numero, descricao, quantidade, valorEstimado, valorTotalEstimado, custo };
 }
 
@@ -151,14 +151,26 @@ function parseTextoBruto(texto: string): ItemImportado[] {
       const numero = Number(match[1]);
       const corpo = match[2].trim();
       const valores = corpo.match(/(\d+(?:[.,]\d+)?)\s*(?:UN|UND|UNID|UNIDADE|PC|PÇ|PÇS)?\s+R\$\s*([\d.]+,\d{2})\s+R\$\s*([\d.]+,\d{2})/i);
-      if (!valores) continue;
+      if (!valores) {
+        const qtdMatch = corpo.match(/(?:QUANTIDADE|QTD\.?|QTDE\.?)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/i);
+        const quantidade = qtdMatch ? moedaParaNumero(qtdMatch[1]) : 0;
+        const descricao = corpo
+          .replace(/(?:QUANTIDADE|QTD\.?|QTDE\.?)\s*[:\-]?\s*\d+(?:[.,]\d+)?/gi, "")
+          .replace(/^(DESCRI(?:Ç|C)[AÃ]O)\s*[:\-]?\s*/i, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (numero && descricao && quantidade) {
+          itens.push({ numero, descricao, quantidade, valorEstimado: 0, valorTotalEstimado: 0, custo: 0 });
+        }
+        continue;
+      }
 
       const quantidade = moedaParaNumero(valores[1]);
       const valorEstimado = moedaParaNumero(valores[2]);
       const valorTotalEstimado = moedaParaNumero(valores[3]);
       const descricao = corpo.replace(valores[0], "").replace(/\s+/g, " ").trim();
 
-      if (numero && descricao && quantidade && valorEstimado) {
+      if (numero && descricao && quantidade) {
         itens.push({ numero, descricao, quantidade, valorEstimado, valorTotalEstimado, custo: 0 });
       }
     }
@@ -187,7 +199,7 @@ export default function ImportarItensTexto({ onImportar, onFechar }: Props) {
     const encontrados = parseTextoBruto(texto);
     if (encontrados.length === 0) {
       setItens([]);
-      setErro("Não consegui identificar os itens. Use o modelo abaixo ou cole uma tabela com item, descrição, quantidade, valor unitário e valor total.");
+      setErro("Não consegui identificar os itens. Informe pelo menos ITEM, DESCRIÇÃO e QUANTIDADE. Valores estimados e custo são opcionais.");
       return;
     }
     setItens(encontrados);
@@ -211,7 +223,7 @@ export default function ImportarItensTexto({ onImportar, onFechar }: Props) {
             <FileText size={18} />
             <div>
               <strong>Formato recomendado</strong>
-              <span>ITEM, DESCRIÇÃO, QUANTIDADE, VALOR UNITÁRIO, VALOR TOTAL e CUSTO. O custo é opcional e também aceita colunas separadas por | ou TAB.</span>
+              <span>ITEM, DESCRIÇÃO e QUANTIDADE são suficientes. VALOR UNITÁRIO, VALOR TOTAL e CUSTO são opcionais e podem ser preenchidos depois.</span>
             </div>
           </div>
 
@@ -255,8 +267,8 @@ export default function ImportarItensTexto({ onImportar, onFechar }: Props) {
                         <td>{String(item.numero).padStart(4, "0")}</td>
                         <td>{item.descricao}</td>
                         <td>{item.quantidade}</td>
-                        <td>{formatarMoeda(item.valorEstimado)}</td>
-                        <td>{formatarMoeda(item.valorTotalEstimado)}</td>
+                        <td>{item.valorEstimado > 0 ? formatarMoeda(item.valorEstimado) : "—"}</td>
+                        <td>{item.valorTotalEstimado > 0 ? formatarMoeda(item.valorTotalEstimado) : "—"}</td>
                         <td>{item.custo > 0 ? formatarMoeda(item.custo) : "—"}</td>
                       </tr>
                     ))}
