@@ -9,6 +9,7 @@ type ItemImportado = {
   quantidade: number;
   valorEstimado: number;
   valorTotalEstimado: number;
+  custo: number;
 };
 
 type Props = {
@@ -61,10 +62,12 @@ function parseBlocoRotulado(bloco: string): ItemImportado | null {
   const qtdRaw = extrairNumeroRotulado(bloco, ["quantidade", "qtd\\.?", "qtde\\.?"]);
   const unitRaw = extrairNumeroRotulado(bloco, ["valor\\s+unit[aá]rio", "vlr\\.?\\s*unit\\.?", "unit[aá]rio"]);
   const totalRaw = extrairNumeroRotulado(bloco, ["valor\\s+total", "vlr\\.?\\s*total", "total"]);
+  const custoRaw = extrairNumeroRotulado(bloco, ["custo\\s+unit[aá]rio", "custo\\s+un(?:it)?\\.?", "custo"]);
 
   const quantidade = qtdRaw ? moedaParaNumero(qtdRaw) : 0;
   const valorEstimado = unitRaw ? moedaParaNumero(unitRaw) : 0;
   let valorTotalEstimado = totalRaw ? moedaParaNumero(totalRaw) : 0;
+  const custo = custoRaw ? moedaParaNumero(custoRaw) : 0;
 
   let descricao = "";
   const linhas = bloco.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -73,14 +76,14 @@ function parseBlocoRotulado(bloco: string): ItemImportado | null {
   if (descricaoIndex >= 0) {
     const partes: string[] = [limparDescricao(linhas[descricaoIndex])];
     for (let i = descricaoIndex + 1; i < linhas.length; i++) {
-      if (/^(quantidade|qtd\.?|qtde\.?|valor\s+unit|vlr\.?\s*unit|unit[aá]rio|valor\s+total|vlr\.?\s*total|total)\b/i.test(linhas[i])) break;
+      if (/^(quantidade|qtd\.?|qtde\.?|valor\s+unit|vlr\.?\s*unit|unit[aá]rio|valor\s+total|vlr\.?\s*total|total|custo)\b/i.test(linhas[i])) break;
       partes.push(linhas[i]);
     }
     descricao = partes.join(" ").trim();
   } else {
     descricao = linhas
       .filter((linha) => !/^\s*(?:item|n[º°o]?\s*(?:do\s*)?item)?\s*[:\-]?\s*\d{1,8}\s*$/i.test(linha))
-      .filter((linha) => !/^(quantidade|qtd\.?|qtde\.?|valor\s+unit|vlr\.?\s*unit|unit[aá]rio|valor\s+total|vlr\.?\s*total|total)\b/i.test(linha))
+      .filter((linha) => !/^(quantidade|qtd\.?|qtde\.?|valor\s+unit|vlr\.?\s*unit|unit[aá]rio|valor\s+total|vlr\.?\s*total|total|custo)\b/i.test(linha))
       .join(" ")
       .trim();
   }
@@ -88,7 +91,7 @@ function parseBlocoRotulado(bloco: string): ItemImportado | null {
   if (!quantidade || !valorEstimado || !descricao) return null;
   if (!valorTotalEstimado) valorTotalEstimado = quantidade * valorEstimado;
 
-  return { numero, descricao, quantidade, valorEstimado, valorTotalEstimado };
+  return { numero, descricao, quantidade, valorEstimado, valorTotalEstimado, custo };
 }
 
 function parseLinhaSeparada(linha: string): ItemImportado | null {
@@ -101,7 +104,7 @@ function parseLinhaSeparada(linha: string): ItemImportado | null {
   const numero = Number(partes[0].replace(/\D/g, ""));
   if (!numero) return null;
 
-  // Formato preferencial: item | descrição | quantidade | unitário | total
+  // Formato preferencial: item | descrição | quantidade | unitário | total | custo
   const descricao = partes[1];
   const quantidade = moedaParaNumero(partes[2].replace(/\b(?:UN|UND|UNID|UNIDADE|PC|PÇ|PÇS)\b/gi, ""));
   const valorEstimado = moedaParaNumero(partes[3]);
@@ -109,8 +112,9 @@ function parseLinhaSeparada(linha: string): ItemImportado | null {
     ? moedaParaNumero(partes[4])
     : quantidade * valorEstimado;
 
+  const custo = partes[5] ? moedaParaNumero(partes[5]) : 0;
   if (!descricao || !quantidade || !valorEstimado) return null;
-  return { numero, descricao, quantidade, valorEstimado, valorTotalEstimado };
+  return { numero, descricao, quantidade, valorEstimado, valorTotalEstimado, custo };
 }
 
 function parseTextoBruto(texto: string): ItemImportado[] {
@@ -155,7 +159,7 @@ function parseTextoBruto(texto: string): ItemImportado[] {
       const descricao = corpo.replace(valores[0], "").replace(/\s+/g, " ").trim();
 
       if (numero && descricao && quantidade && valorEstimado) {
-        itens.push({ numero, descricao, quantidade, valorEstimado, valorTotalEstimado });
+        itens.push({ numero, descricao, quantidade, valorEstimado, valorTotalEstimado, custo: 0 });
       }
     }
   }
@@ -207,7 +211,7 @@ export default function ImportarItensTexto({ onImportar, onFechar }: Props) {
             <FileText size={18} />
             <div>
               <strong>Formato recomendado</strong>
-              <span>ITEM, DESCRIÇÃO, QUANTIDADE, VALOR UNITÁRIO e VALOR TOTAL. Também aceita colunas separadas por | ou TAB.</span>
+              <span>ITEM, DESCRIÇÃO, QUANTIDADE, VALOR UNITÁRIO, VALOR TOTAL e CUSTO. O custo é opcional e também aceita colunas separadas por | ou TAB.</span>
             </div>
           </div>
 
@@ -215,7 +219,7 @@ export default function ImportarItensTexto({ onImportar, onFechar }: Props) {
             className="textImportArea"
             value={texto}
             onChange={(event) => setTexto(event.target.value)}
-            placeholder={`ITEM 0006\nDESCRIÇÃO: Pneu 215/65 R16, novo, primeira vida...\nQUANTIDADE: 8\nVALOR UNITÁRIO: R$ 1.030,00\nVALOR TOTAL: R$ 8.240,00\n\nITEM 0007\nDESCRIÇÃO: Pneu 235/70 R16...\nQUANTIDADE: 12\nVALOR UNITÁRIO: R$ 1.259,00\nVALOR TOTAL: R$ 15.108,00`}
+            placeholder={`ITEM 0006\nDESCRIÇÃO: Pneu 215/65 R16, novo, primeira vida...\nQUANTIDADE: 8\nVALOR UNITÁRIO: R$ 1.030,00\nVALOR TOTAL: R$ 8.240,00\n\nITEM 0007\nDESCRIÇÃO: Pneu 235/70 R16...\nQUANTIDADE: 12\nVALOR UNITÁRIO: R$ 1.259,00\nVALOR TOTAL: R$ 15.108,00\\nCUSTO: R$ 1.050,00`}
           />
 
           {erro && <div className="pdfError">{erro}</div>}
@@ -243,7 +247,7 @@ export default function ImportarItensTexto({ onImportar, onFechar }: Props) {
               <div className="pdfTableWrap">
                 <table className="pdfTable">
                   <thead>
-                    <tr><th>Item</th><th>Descrição</th><th>Qtd.</th><th>Unitário</th><th>Total</th></tr>
+                    <tr><th>Item</th><th>Descrição</th><th>Qtd.</th><th>Unitário</th><th>Total</th><th>Custo</th></tr>
                   </thead>
                   <tbody>
                     {itens.map((item) => (
@@ -253,6 +257,7 @@ export default function ImportarItensTexto({ onImportar, onFechar }: Props) {
                         <td>{item.quantidade}</td>
                         <td>{formatarMoeda(item.valorEstimado)}</td>
                         <td>{formatarMoeda(item.valorTotalEstimado)}</td>
+                        <td>{item.custo > 0 ? formatarMoeda(item.custo) : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
