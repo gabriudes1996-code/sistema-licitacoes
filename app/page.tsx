@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, ChevronRight, FileText, Gavel, LayoutDashboard, Menu, Settings, X, CircleDollarSign, ReceiptText } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronRight, FileText, Gavel, LayoutDashboard, Menu, Settings, X, CircleDollarSign, ReceiptText } from "lucide-react";
 import Dashboard from "./components/Dashboard";
 import Licitacoes from "./components/Licitacoes";
 import Recebimentos from "./components/Recebimentos";
 import Agenda from "./components/Agenda";
 import CustosEmpresa from "./components/CustosEmpresa";
+import VolumeLicitacoes from "./components/VolumeLicitacoes";
 
 const menu = [
   { label: "Dashboard", icon: LayoutDashboard },
@@ -14,6 +15,7 @@ const menu = [
   { label: "Recebimentos", icon: CircleDollarSign },
   { label: "Agenda", icon: CalendarDays },
   { label: "Custos da empresa", icon: ReceiptText },
+  { label: "Volume de licitações", icon: BarChart3 },
 ];
 
 export default function Home() {
@@ -27,6 +29,7 @@ export default function Home() {
       case "Recebimentos": return <Recebimentos />;
       case "Agenda": return <Agenda />;
       case "Custos da empresa": return <CustosEmpresa />;
+      case "Volume de licitações": return <VolumeLicitacoes />;
       default: return <Dashboard />;
     }
   };
