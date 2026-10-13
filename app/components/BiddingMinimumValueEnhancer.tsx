@@ -33,11 +33,20 @@ export default function BiddingMinimumValueEnhancer() {
         const lanceInput = colunas[8].querySelector<HTMLInputElement>("input");
         const lance = Number(lanceInput?.value || 0) || 0;
 
+        // A margem-meta fica na propria coluna VALOR MINIMO.
+        // Antes o enhancer procurava a meta na coluna de margem de lucro e,
+        // quando nao encontrava, voltava silenciosamente para 20%.
         let margemDesejada = 20;
-        const meta = colunas[11].textContent?.match(/meta:\s*([0-9.,]+)/i);
-        if (meta) {
-          const valorMeta = Number(meta[1].replace(",", "."));
+        const metaMinimo = colunas[9].textContent?.match(/meta:\s*([0-9.,]+)/i);
+        if (metaMinimo) {
+          const valorMeta = Number(metaMinimo[1].replace(",", "."));
           if (Number.isFinite(valorMeta)) margemDesejada = valorMeta;
+        } else {
+          const metaMargem = colunas[11].textContent?.match(/meta:\s*([0-9.,]+)/i);
+          if (metaMargem) {
+            const valorMeta = Number(metaMargem[1].replace(",", "."));
+            if (Number.isFinite(valorMeta)) margemDesejada = valorMeta;
+          }
         }
 
         const custoRealUnitario = custo + (quantidade > 0 ? frete / quantidade : 0);
@@ -48,7 +57,7 @@ export default function BiddingMinimumValueEnhancer() {
         if (!valor) {
           valor = document.createElement("strong");
           valor.className = "minimumBidValue";
-          alvoMinimo.appendChild(valor);
+          alvoMinimo.prepend(valor);
         }
         valor.textContent = custoRealUnitario > 0 ? brl(valorMinimo) : "—";
         valor.title = `Custo + frete por unidade acrescido de ${margemDesejada.toFixed(0)}% de margem desejada`;
